@@ -12,9 +12,17 @@ Runs end-to-end evaluation:
 """
 
 import os
+import sys
 import argparse
 import torch
 import numpy as np
+
+# Ensure UTF-8 output on Windows consoles if supported
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
 from tqdm import tqdm
 from tabulate import tabulate
 
@@ -186,7 +194,7 @@ def main():
             "misses": misses
         }
 
-    headers = ["Detector", "Spearman ρ (Primary)", "p-value", "AUROC", "False Alarms", "Misses"]
+    headers = ["Detector", "Spearman rho (Primary)", "p-value", "AUROC", "False Alarms", "Misses"]
     try:
         print(tabulate(results_table, headers=headers, tablefmt="github"))
     except ImportError:
@@ -241,7 +249,7 @@ def main():
         save_path=os.path.join(args.output_dir, "severity_curves.png")
     )
 
-    print(f"\n[✔] Evaluation complete! Artifacts saved to: {args.output_dir}")
+    print(f"\n[OK] Evaluation complete! Artifacts saved to: {args.output_dir}")
 
 if __name__ == "__main__":
     main()
