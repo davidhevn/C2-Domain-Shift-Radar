@@ -19,21 +19,21 @@ Hệ thống **Domain Shift Radar** được thiết kế nhằm:
 
 ## 2. Tiêu chuẩn & Yêu cầu tối thiểu (Minimum Requirements)
 
-- **Đa miền đánh giá**: Tối thiểu **1 source domain** + ít nhất **3 target domains / shift levels** (ví dụ: CIFAR-10 vs CIFAR-10-C với các mức corruptions và severity khác nhau).
+- **Đa miền đánh giá**: Tối thiểu **1 source domain** + ít nhất **3 target domains / shift levels** (Gaussian Noise, Fog, Motion Blur, Contrast, Brightness, Pixelate với 5 cấp độ severity).
 - **Đo lường downstream**: Có mô hình / task cụ thể để định lượng mức suy giảm hiệu năng (*Performance Drop*) trên tập evaluation.
-- **Không chỉ đo khoảng cách hình thức**: Nghiêm cấm việc chỉ dừng lại ở việc chứng minh source và target "khác nhau" về mặt phân phối thuần túy.
-- **Phân tích sai số thực tế**: Phải phát hiện và báo cáo ít nhất **1 trường hợp False Alarm** (báo động giả khi performance không tụt) hoặc **Miss** (bỏ sót khi performance tụt nghiêm trọng mà không phát hiện).
+- **Không chỉ đo khoảng cách hình thức**: Chứng minh tương quan thực tế với mức sụt giảm hiệu năng (Performance Drop), không chỉ dừng lại ở đo khoảng cách phân phối.
+- **Phân tích sai số thực tế**: Phát hiện và báo cáo chi tiết **False Alarm** (báo động giả khi performance không tụt) hoặc **Miss** (bỏ sót khi performance tụt nghiêm trọng mà không phát hiện).
 
 ---
 
-## 3. Không gian nghiên cứu (Research Space)
+## 3. Không gian nghiên cứu & Phương pháp triển khai (Implemented Detectors)
 
-Hệ thống khai thác và so sánh các hướng tiếp cận chính:
-- **Feature Statistics & Embeddings**: Giám sát phân phối không gian biểu diễn ẩn (latent features, representation drift).
-- **Statistical Distances**: MMD (Maximum Mean Discrepancy), Wasserstein Distance, Two-Sample Classifier (C2ST), FID-like distance.
-- **OOD Detection & Model Uncertainty**: Energy-based score, Mahalanobis distance, Softmax entropy, ATC (Average Thresholded Confidence).
-- **VLM Semantics & Metadata**: Sử dụng mô hình nền tảng (Vision-Language Models) để trích xuất ngữ nghĩa và thuộc tính lát cắt.
-- **Drift Detection & Streaming**: Change-Point Detection, Page-Hinkley, kiểm định trượt trên dòng dữ liệu liên tục.
+Hệ thống tích hợp sẵn các thuật toán unsupervised shift & risk detection hàng đầu:
+- **ATC (Average Thresholded Confidence - NeurIPS 2021)**: Tính toán ngưỡng tin cậy $t$ trên tập validation để ước lượng trực tiếp mức sụt giảm độ chính xác trên target batch.
+- **Predictive Softmax Entropy**: Đo lường mức độ bất định (uncertainty) của mô hình trước dữ liệu mới.
+- **Confidence Drop (tư tưởng NannyML CBPE)**: Theo dõi độ lệch mức độ tự tin lớn nhất (max-probability) so với phân phối chuẩn.
+- **MMD (Maximum Mean Discrepancy)**: Kiểm định Two-Sample Test trên không gian biểu diễn đặc trưng ẩn (latent feature embeddings) với RBF kernel.
+- **Slice Localization**: Tự động phân rã và xếp hạng lát cắt dữ liệu chịu ảnh hưởng rủi ro cao nhất.
 
 ---
 
@@ -44,13 +44,65 @@ Hệ thống khai thác và so sánh các hướng tiếp cận chính:
 
 ### 📊 Secondary Metrics
 - **Shift-Detection AUROC**: Khả năng phân biệt giữa in-distribution vs shifted distributions.
-- **False Alarm Rate (FAR)**: Tỷ lệ cảnh báo sai trên dữ liệu lành tính.
-- **Slice Localization Accuracy**: Độ chính xác khi định vị phân vùng/nhóm dữ liệu chịu ảnh hưởng lớn nhất.
-- **Score Calibration**: Mức độ hiệu chuẩn giữa giá trị Shift Score và phần trăm hiệu năng tụt.
-- *(Streaming Bonus)*: Time-to-Detect (TTD), số false alarms/giờ, độ ổn định của tín hiệu cảnh báo.
+- **False Alarm Rate (FAR)** & **Miss Rate**: Tỷ lệ cảnh báo sai trên dữ liệu lành tính và tỷ lệ bỏ sót rủi ro thật.
+- **Slice Localization Ranking**: Độ chính xác khi định vị phân vùng/lát cắt dữ liệu chịu rủi ro cao nhất.
 
 ---
 
-## 5. Lưu ý & Bẫy Production (Pitfall Warning)
+## 5. Cấu trúc Dự án (Repository Structure)
 
-> ⚠️ **Bẫy thường gặp**: Một thước đo khoảng cách (distance metric) dù trông "rất khoa học" và có nền tảng toán học phức tạp, nhưng nếu **không có tương quan hay khả năng dự báo mức rủi ro sụt giảm của downstream model**, thì giá trị áp dụng trong môi trường production là cực kỳ thấp.
+```text
+C2-Domain-Shift-Radar/
+├── .gitignore                   # Cấu hình loại bỏ dữ liệu nặng, model weights, venv
+├── README.md                    # Tài liệu hướng dẫn & quy chuẩn bài toán
+├── requirements.txt             # Danh sách thư viện phụ thuộc
+├── run_radar.py                 # Pipeline chạy đánh giá End-to-End chính
+├── src/
+│   ├── data/
+│   │   ├── corruptions.py       # Bộ sinh domain shifts (Noise, Fog, Blur, Brightness, Contrast...)
+│   │   └── loader.py            # DataLoader CIFAR-10 chia tách Source Val & Test
+│   ├── models/
+│   │   └── model.py             # ResNet-18 Backbone & trích xuất latent features/logits
+│   ├── radar/
+│   │   ├── detectors.py         # Triển khai ATC, Entropy, ConfidenceDrop, MMD
+│   │   └── slice_locator.py     # Module khoanh vùng lát cắt (Slice Localization)
+│   ├── evaluation/
+│   │   └── metrics.py           # Tính Spearman rho, AUROC, False Alarm & Misses
+│   └── utils/
+│       └── visualizer.py        # Vẽ biểu đồ tương quan Spearman & đường cong rủi ro
+└── results/                     # Thư mục lưu biểu đồ và báo cáo kết quả tự động
+```
+
+---
+
+## 6. Hướng dẫn Dành cho Team (Quickstart Guide)
+
+### 🚀 Bước 1: Clone repository
+```bash
+git clone https://github.com/davidhevn/C2-Domain-Shift-Radar.git
+cd C2-Domain-Shift-Radar
+```
+
+### 📦 Bước 2: Cài đặt môi trường
+Khuyến nghị tạo môi trường ảo Python 3.10+:
+```bash
+python -m venv .venv
+# Trên Windows:
+.venv\Scripts\activate
+# Trên Linux/macOS:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+### ⚡ Bước 3: Chạy thử nghiệm Radar Pipeline
+Chạy pipeline đánh giá tự động trên toàn bộ các miền dịch chuyển và xuất báo cáo:
+```bash
+# Chạy đầy đủ:
+python run_radar.py
+
+# Hoặc chạy kiểm tra nhanh (chọn 200 mẫu mỗi batch):
+python run_radar.py --samples_per_eval 200
+```
+
+Kết quả báo cáo bảng số liệu, phân tích False Alarm/Miss và biểu đồ Spearman $\rho$ sẽ tự động lưu vào thư mục `results/`.
