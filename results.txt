@@ -1,0 +1,14 @@
+Using device: cpu
+Loading data...
+Loading model...
+Evaluating on Original Clean Test Set...
+Original Test Accuracy: 7.99%
+--------------------------------------------------
+Evaluating on Domain Shifts (Severity=3)...
+Corruption: gaussian_noise  | Severity: 3 | Acc:  8.06% | Drop: -0.08%
+Corruption: brightness      | Severity: 3 | Acc:  8.11% | Drop: -0.13%
+Corruption: contrast        | Severity: 3 | Acc:  9.11% | Drop: -1.12%
+Corruption: pixelate        | Severity: 3 | Acc:  6.78% | Drop:  1.21%
+Corruption: motion_blur     | Severity: 3 | Acc: 12.83% | Drop: -4.84%
+Corruption: fog             | Severity: 3 | Acc:  8.75% | Drop: -0.76%
+Corruption: salt_pepper     | Severity: 3 | Acc: 16.40% | Drop: -8.41%

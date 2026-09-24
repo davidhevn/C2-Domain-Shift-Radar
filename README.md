@@ -106,3 +106,23 @@ python run_radar.py --samples_per_eval 200
 ```
 
 Kết quả báo cáo bảng số liệu, phân tích False Alarm/Miss và biểu đồ Spearman $\rho$ sẽ tự động lưu vào thư mục `results/`.
+
+---
+
+## 7. Kết quả Fine-tune & Đánh giá Thực tế (Finetuning Results)
+
+Mô hình hiện đã được fine-tune hoàn chỉnh trên tập CIFAR-10 trong 15 Epochs, với trọng số tối ưu nhất đạt mức **Clean Baseline Accuracy: 70.65%**.
+
+Dưới đây là thống kê độ sụt giảm hiệu năng (Accuracy Drop) trực tiếp khi mô hình bị đánh giá trên 7 loại nhiễu vật lý (Severity = 3):
+
+| Loại Nhiễu (Corruption) | Độ chính xác (Accuracy) | Độ sụt giảm (Drop) | Đánh giá Mức độ Ảnh hưởng |
+| :--- | :---: | :---: | :--- |
+| **Gaussian Noise** | 43.00% | `-27.65%` | Trung bình cao |
+| **Brightness** | 56.95% | `-13.70%` | Thấp |
+| **Contrast** | 39.20% | `-31.45%` | Cao |
+| **Pixelate** | 42.70% | `-27.95%` | Trung bình cao |
+| **Motion Blur** | 25.70% | `-44.95%` | **Cực kì nghiêm trọng (Nặng nhất)** |
+| **Fog** | 38.40% | `-32.25%` | Cao |
+| **Salt & Pepper** | 33.35% | `-37.30%` | Rất nghiêm trọng |
+
+*Lưu ý: Các số liệu này đại diện cho Ground-Truth Risk của mô hình downstream khi chạy trên thực tế, phục vụ làm cột mốc để Calibration các chỉ số như Pixel/Feature Distance hay Predictive Entropy.*

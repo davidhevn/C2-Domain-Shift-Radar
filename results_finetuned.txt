@@ -1,0 +1,15 @@
+Using device: cpu
+Model: CIFARResNet18 fine-tuned on cifar10/test (80% split)
+
+Clean Val Accuracy (Baseline): 70.65%
+------------------------------------------------------------
+Corruption       | Severity |    Acc |     Drop
+------------------------------------------------------------
+gaussian_noise   | 3        | 43.00% |  +27.65%
+brightness       | 3        | 56.95% |  +13.70%
+contrast         | 3        | 39.20% |  +31.45%
+pixelate         | 3        | 42.70% |  +27.95%
+motion_blur      | 3        | 25.70% |  +44.95%
+fog              | 3        | 38.40% |  +32.25%
+salt_pepper      | 3        | 33.35% |  +37.30%
+------------------------------------------------------------

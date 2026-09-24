@@ -27,7 +27,7 @@ def main():
     print(f"Using device: {device}")
     
     print("Loading data...")
-    train_loader, val_loader, test_loader = get_cifar10_dataloaders(data_dir="./data", batch_size=256)
+    train_loader, val_loader, test_loader = get_cifar10_dataloaders(data_dir=".", batch_size=256)
     
     print("Loading model...")
     model_wrapper = load_model(device=device)

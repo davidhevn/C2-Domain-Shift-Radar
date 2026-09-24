@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C2: Domain Shift Radar - POC Presentation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+        
+        :root {
+            --bg-color: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-1: #3b82f6;
+            --accent-2: #8b5cf6;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.05); /* Viền nhạt hơn nhiều để không bị thô */
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        /* Animated Background */
+        .bg-shapes {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 25%),
+                        radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.15), transparent 25%);
+        }
+
+        .slide-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .slide {
+            min-width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3.5rem;
+            max-width: 1300px; /* Tăng max-width để không bị ép chữ */
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .slide.active .glass-card {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        h1, h2 {
+            margin-top: 0;
+            background: linear-gradient(135deg, #60a5fa, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* TĂNG FONT SIZE TỔNG THỂ */
+        h1 { font-size: 4.5rem; font-weight: 800; margin-bottom: 1rem; line-height: 1.2; }
+        h2 { font-size: 2.8rem; font-weight: 600; margin-bottom: 1.5rem; }
+        
+        p, li {
+            font-size: 1.3rem; /* Tăng từ 1.15 lên 1.3 */
+            line-height: 1.8;
+            color: var(--text-muted);
+            margin-bottom: 1.2rem;
+        }
+
+        ul {
+            padding-left: 1.5rem;
+        }
+
+        li::marker {
+            color: var(--accent-1);
+        }
+
+        .highlight {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.35rem 1rem;
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            border-radius: 9999px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 1.5rem;
+            z-index: 100;
+        }
+
+        button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .progress-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 6px;
+            background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+            width: 0%;
+            transition: width 0.3s ease;
+            z-index: 100;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+        
+        .metric-card {
+            background: rgba(0,0,0,0.2);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: none;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .metric-value {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+        
+        .metric-label {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Image Styling */
+        .sample-img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 12px;
+            border: none;
+            image-rendering: pixelated; 
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease;
+        }
+
+        .sample-img:hover {
+            transform: scale(1.05) rotate(2deg);
+        }
+
+        .img-label {
+            font-size: 1.1rem;
+            margin-top: 0.75rem;
+            color: #c084fc;
+            font-weight: 600;
+        }
+
+        /* Lớp nền không viền */
+        .borderless-box {
+            background: rgba(0,0,0,0.2);
+            padding: 1.2rem;
+            border-radius: 16px;
+            border: none; /* Bỏ viền thừa */
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progress"></div>
+    <div class="bg-shapes"></div>
+    
+    <div class="slide-container" id="slider">
+        <!-- Slide 1 -->
+        <div class="slide active">
+            <div class="glass-card" style="text-align: center;">
+                <span class="badge">Dự án C2</span>
+                <h1>Domain Shift Radar 📡</h1>
+                <p style="font-size: 1.6rem; color: #e2e8f0; margin-bottom: 3rem;">Hệ thống Cảnh báo Sớm Suy giảm Hiệu năng Mô hình Học máy dưới tác động của Dịch chuyển Dữ liệu thực tế.</p>
+                <div style="display: flex; align-items: center; justify-content: center; gap: 1rem;">
+                    <div style="width: 80px; height: 3px; background: var(--accent-1); border-radius: 2px;"></div>
+                    <span style="color: var(--accent-1); font-weight: 600; letter-spacing: 3px; font-size: 1.2rem;">PROOF OF CONCEPT SUMMARY</span>
+                    <div style="width: 80px; height: 3px; background: var(--accent-1); border-radius: 2px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 2 -->
+        <div class="slide">
+            <div class="glass-card">
+                <span class="badge">Feature 1</span>
+                <h2>Pipeline Chạy Thực Tế (Runnable POC)</h2>
+                <div style="display: flex; gap: 3rem; align-items: center;">
+                    <div style="flex: 1.2;">
+                        <ul>
+                            <li><span class="highlight">Baseline Finetuned Model:</span> Tích hợp bộ khung ResNet18 pipeline cho dataset mẫu. Framework đã sẵn sàng để cắm bất kỳ checkpoint nào.</li>
+                            <li><span class="highlight">Data Corruptions Simulator:</span> Cơ chế sinh nhiễu thời gian thực chạy thẳng trên RAM. Hiện tại xử lý rất tốt các nhiễu vật lý (Covariate Shift).</li>
+                            <li><span class="highlight">Khả năng Custom:</span> Tự động tạo thêm nhiễu đặc thù <code style="color: #60a5fa">salt_pepper</code> linh hoạt. Sẵn sàng mở rộng bắt lỗi khác biệt bối cảnh (Semantic Shift) qua OOD.</li>
+                        </ul>
+                    </div>
+                    <!-- Ảnh minh họa thực tế -->
+                    <div style="flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                        <div style="text-align: center;">
+                            <img src="cifar10/shifted_samples/0_original.png" class="sample-img">
+                            <div class="img-label">Ảnh gốc (Clean)</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <img src="cifar10/shifted_samples/fog_severity3.png" class="sample-img">
+                            <div class="img-label">Nhiễu Sương Mù</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <img src="cifar10/shifted_samples/salt_pepper_severity3.png" class="sample-img">
+                            <div class="img-label">Salt & Pepper</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <img src="cifar10/shifted_samples/pixelate_severity3.png" class="sample-img">
+                            <div class="img-label">Vỡ Hạt</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 3 -->
+        <div class="slide">
+            <div class="glass-card">
+                <span class="badge">Results</span>
+                <h2>Thống Kê Sụt Giảm Hiệu Năng Thực Tế (Drop Performance)</h2>
+                <p>Báo cáo trực quan từng tập dữ liệu nhiễu (Domain Shift) đi kèm <span class="highlight">số liệu thực tế được đo đạc bằng model</span> so với tập gốc.</p>
+                <div style="background: rgba(45, 212, 191, 0.15); padding: 1rem 1.5rem; border-radius: 12px; margin-top: 1rem; color: #5eead4; font-size: 1.15rem; border: none;">
+                    <strong>💡 Cập nhật:</strong> Mô hình đã được Fine-tune hoàn chỉnh trên CIFAR-10. Baseline Accuracy đạt <strong>70.65%</strong>. Số liệu bên dưới là đo đạc thực tế của hệ thống.
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-top: 2rem;">
+                    <!-- Original -->
+                    <div class="borderless-box">
+                        <img src="cifar10/shifted_samples/0_original.png" class="sample-img" style="width: 75%; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 600; color: #3b82f6; font-size: 1.1rem;">Clean Baseline</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 0.3rem;">70.65%</div>
+                        <div style="font-size: 1rem; color: var(--text-muted); margin-top: 0.2rem;">(Gốc)</div>
+                    </div>
+                    
+                    <!-- Gaussian Noise -->
+                    <div class="borderless-box">
+                        <img src="cifar10/shifted_samples/gaussian_noise_severity3.png" class="sample-img" style="width: 75%; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 600; color: #c084fc; font-size: 1.1rem;">Gaussian Noise</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 0.3rem;">43.00%</div>
+                        <div style="font-size: 1rem; color: #ef4444; margin-top: 0.2rem; font-weight: 600;">Drop: +27.65%</div>
+                    </div>
+
+                    <!-- Brightness -->
+                    <div class="borderless-box">
+                        <img src="cifar10/shifted_samples/brightness_severity3.png" class="sample-img" style="width: 75%; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 600; color: #c084fc; font-size: 1.1rem;">Brightness</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 0.3rem;">56.95%</div>
+                        <div style="font-size: 1rem; color: #ef4444; margin-top: 0.2rem; font-weight: 600;">Drop: +13.70%</div>
+                    </div>
+
+                    <!-- Contrast -->
+                    <div class="borderless-box">
+                        <img src="cifar10/shifted_samples/contrast_severity3.png" class="sample-img" style="width: 75%; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 600; color: #c084fc; font-size: 1.1rem;">Contrast</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 0.3rem;">39.20%</div>
+                        <div style="font-size: 1rem; color: #ef4444; margin-top: 0.2rem; font-weight: 600;">Drop: +31.45%</div>
+                    </div>
+
+                    <!-- Pixelate -->
+                    <div class="borderless-box">
+                        <img src="cifar10/shifted_samples/pixelate_severity3.png" class="sample-img" style="width: 75%; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 600; color: #c084fc; font-size: 1.1rem;">Pixelate</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 0.3rem;">42.70%</div>
+                        <div style="font-size: 1rem; color: #ef4444; margin-top: 0.2rem; font-weight: 600;">Drop: +27.95%</div>
+                    </div>
+
+                    <!-- Motion Blur -->
+                    <div class="borderless-box">
+                        <img src="cifar10/shifted_samples/motion_blur_severity3.png" class="sample-img" style="width: 75%; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 600; color: #c084fc; font-size: 1.1rem;">Motion Blur</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 0.3rem;">25.70%</div>
+                        <div style="font-size: 1rem; color: #ef4444; margin-top: 0.2rem; font-weight: 600;">Drop: +44.95%</div>
+                    </div>
+
+                    <!-- Fog -->
+                    <div class="borderless-box">
+                        <img src="cifar10/shifted_samples/fog_severity3.png" class="sample-img" style="width: 75%; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 600; color: #c084fc; font-size: 1.1rem;">Fog</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 0.3rem;">38.40%</div>
+                        <div style="font-size: 1rem; color: #ef4444; margin-top: 0.2rem; font-weight: 600;">Drop: +32.25%</div>
+                    </div>
+
+                    <!-- Salt & Pepper -->
+                    <div class="borderless-box">
+                        <img src="cifar10/shifted_samples/salt_pepper_severity3.png" class="sample-img" style="width: 75%; margin-bottom: 0.5rem;">
+                        <div style="font-weight: 600; color: #c084fc; font-size: 1.1rem;">Salt & Pepper</div>
+                        <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-main); margin-top: 0.3rem;">33.35%</div>
+                        <div style="font-size: 1rem; color: #ef4444; margin-top: 0.2rem; font-weight: 600;">Drop: +37.30%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4 -->
+        <div class="slide">
+            <div class="glass-card" style="max-width: 1350px; width: 100%; padding: 3rem;">
+                <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5;">Analysis & Feasibility</span>
+                <h2>Bẫy Đo Lường (The Metric Trap) & Tính Thực Tiễn</h2>
+                <div style="display: flex; gap: 3rem; align-items: stretch; margin-top: 1.5rem;">
+                    
+                    <!-- Phần Metric Trap -->
+                    <div style="flex: 1.4; background: rgba(239, 68, 68, 0.1); padding: 2.2rem; border-radius: 20px; border: none;">
+                        <h3 style="color: #f87171; margin-top: 0; font-size: 1.7rem; margin-bottom: 0.5rem;">🚨 Thực Nghiệm Lệch Pha (Mismatch)</h3>
+                        <p style="font-size: 1.2rem; color: #e2e8f0; margin-bottom: 1.5rem; line-height: 1.5;"><em>Một Distance Metric nhìn "rất khoa học" nhưng không dự báo đúng rủi ro của Downstream Model thì giá trị Production bằng 0.</em></p>
+                        
+                        <table style="width: 100%; border-collapse: collapse; color: #f8fafc; font-size: 1.2rem; text-align: left;">
+                            <tr style="border-bottom: 2px solid rgba(255,255,255,0.1);">
+                                <th style="padding: 1rem 0; color: #94a3b8;">Loại Nhiễu</th>
+                                <th style="padding: 1rem 0; color: #94a3b8;">Pixel Dist</th>
+                                <th style="padding: 1rem 0; color: #94a3b8;">Feature Dist</th>
+                                <th style="padding: 1rem 0; color: #94a3b8; text-align: right;">Acc Drop</th>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <td style="padding: 1rem 0;">Brightness</td>
+                                <td style="padding: 1rem 0; color: #fca5a5;">0.072 (Cao)</td>
+                                <td style="padding: 1rem 0; color: #4ade80;">0.119 (Thấp)</td>
+                                <td style="padding: 1rem 0; text-align: right; color: #f87171; font-weight: bold;">+7.0% (Miss ⚠️)</td>
+                            </tr>
+                            <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <td style="padding: 1rem 0;">Salt & Pepper</td>
+                                <td style="padding: 1rem 0; color: #4ade80;">0.028 (Thấp)</td>
+                                <td style="padding: 1rem 0; color: #fca5a5;">0.430 (Cao)</td>
+                                <td style="padding: 1rem 0; text-align: right; color: #fca5a5; font-weight: bold;">-26.0% (False Alarm ⚠️)</td>
+                            </tr>
+                        </table>
+                        <p style="font-size: 1.2rem; line-height: 1.6; color: #e2e8f0; margin-top: 1.5rem; margin-bottom: 0;">
+                            👉 <strong>Chốt:</strong> Metric (Shift Score) bắt buộc phải được <strong>Calibration (Hiệu chuẩn)</strong> để tương quan tuyến tính với Acc Drop của mô hình.
+                        </p>
+                    </div>
+
+                    <!-- Phần Feasibility -->
+                    <div style="flex: 1;">
+                        <h3 style="color: #60a5fa; margin-top: 0; font-size: 1.8rem;">Tính Thực Tiễn</h3>
+                        <ul style="margin-top: 1.5rem;">
+                            <li><span class="highlight">Đo lường Không Nhãn:</span> Dù Metric cần Calibration cẩn thận, nhưng một khi đã lên Production, Radar sẽ hoạt động 100% Không Nhãn.</li>
+                            <li><span class="highlight">Tối Ưu Overhead:</span> Việc trích xuất Feature và đo khoảng cách chạy trực tiếp In-Memory trên GPU. Độ trễ (Latency) thêm vào chỉ vài mili-giây.</li>
+                            <li><span class="highlight">Kiến trúc Plug & Play:</span> Modular Design dễ dàng cắm Radar vào bất kỳ Pipeline Inference nào mà không phá Code Cõi.</li>
+                        </ul>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 5: MLOps Solutions -->
+        <div class="slide">
+            <div class="glass-card">
+                <span class="badge">Solutions</span>
+                <h2>Giải Pháp Tự Động Hóa (MLOps Integration)</h2>
+                <p style="margin-bottom: 2.5rem; font-size: 1.35rem;">Khi Radar kích hoạt báo động sụt giảm, hệ thống ngay lập tức thực thi 1 trong 3 kịch bản sau để khắc phục:</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 2rem;">
+                    
+                    <div style="background: rgba(0,0,0,0.25); padding: 2rem; border-radius: 20px; border: none; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-8px)'" onmouseout="this.style.transform='none'">
+                        <div style="font-size: 3.5rem; margin-bottom: 1rem;">⚡</div>
+                        <h3 style="color: #60a5fa; margin-top: 0; font-size: 1.5rem;">1. Test-Time Adaptation</h3>
+                        <p style="font-size: 1.15rem; line-height: 1.6; color: #e2e8f0; margin-bottom: 0;"><strong>(Tức thời):</strong> Cập nhật tham số nội tại (BatchNorm) để mô hình thích nghi ngay lập tức với lớp nhiễu (như sương mù) tại thời điểm Inference mà không cần gán nhãn mới.</p>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.25); padding: 2rem; border-radius: 20px; border: none; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-8px)'" onmouseout="this.style.transform='none'">
+                        <div style="font-size: 3.5rem; margin-bottom: 1rem;">🛡️</div>
+                        <h3 style="color: #f87171; margin-top: 0; font-size: 1.5rem;">2. Fallback & Reject</h3>
+                        <p style="font-size: 1.15rem; line-height: 1.6; color: #e2e8f0; margin-bottom: 0;"><strong>(An toàn):</strong> Khi Shift Score vượt ngưỡng đỏ, hệ thống từ chối dự đoán (Reject) hoặc chuyển sang luồng dự phòng (Human-in-the-loop / Cảm biến khác) để chặn rủi ro.</p>
+                    </div>
+
+                    <div style="background: rgba(0,0,0,0.25); padding: 2rem; border-radius: 20px; border: none; transition: transform 0.3s ease;" onmouseover="this.style.transform='translateY(-8px)'" onmouseout="this.style.transform='none'">
+                        <div style="font-size: 3.5rem; margin-bottom: 1rem;">🧠</div>
+                        <h3 style="color: #c084fc; margin-top: 0; font-size: 1.5rem;">3. Active Learning</h3>
+                        <p style="font-size: 1.15rem; line-height: 1.6; color: #e2e8f0; margin-bottom: 0;"><strong>(Dài hạn):</strong> Radar đóng vai trò "màng lọc", chỉ gửi các ảnh bị lỗi đem đi gán nhãn. Sau đó kích hoạt CI/CD Pipeline để Retrain lại mô hình (Phiên bản v2.0).</p>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 6 -->
+        <div class="slide">
+            <div class="glass-card">
+                <span class="badge">Conclusion</span>
+                <h2>Chốt Requirement & Sẵn Sàng Scale Up</h2>
+                <div style="display: flex; gap: 2.5rem; align-items: stretch; margin-top: 2rem;">
+                    <div style="flex: 1; background: rgba(59, 130, 246, 0.1); padding: 2.5rem; border-radius: 20px; border: none;">
+                        <h3 style="color: #60a5fa; margin-top: 0; font-size: 1.6rem;">Mục Tiêu POC: ĐẠT 100%</h3>
+                        <ul style="margin-bottom: 0; margin-top: 1.5rem;">
+                            <li>✅ Khởi chạy thành công luồng Test tự động.</li>
+                            <li>✅ Sinh nhiễu (Covariate Shift) chuẩn xác.</li>
+                            <li>✅ Khung sườn tính toán sụt giảm Performance đã hoạt động trơn tru.</li>
+                        </ul>
+                    </div>
+                    <div style="flex: 1; background: rgba(139, 92, 246, 0.1); padding: 2.5rem; border-radius: 20px; border: none;">
+                        <h3 style="color: #c084fc; margin-top: 0; font-size: 1.6rem;">Next Step (Scale Up)</h3>
+                        <ul style="margin-bottom: 0; margin-top: 1.5rem;">
+                            <li>🚀 Load mô hình Pretrained trọng số cao.</li>
+                            <li>🚀 Chuyển đổi sang cơ chế Không Nhãn.</li>
+                            <li>🚀 Tích hợp Webhook với cơ chế <strong>"Time-Window Smoothing"</strong> để chặn báo động giả qua Slack/Email.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button id="prevBtn" onclick="moveSlide(-1)" disabled>
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        </button>
+        <button id="nextBtn" onclick="moveSlide(1)">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const slider = document.getElementById('slider');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const progress = document.getElementById('progress');
+
+        function updateUI() {
+            slider.style.transform = `translateX(-${currentSlide * 100}vw)`;
+            
+            slides.forEach((slide, index) => {
+                if(index === currentSlide) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
+            });
+
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === slides.length - 1;
+            
+            progress.style.width = `${((currentSlide + 1) / slides.length) * 100}%`;
+        }
+
+        function moveSlide(dir) {
+            currentSlide += dir;
+            if (currentSlide < 0) currentSlide = 0;
+            if (currentSlide >= slides.length) currentSlide = slides.length - 1;
+            updateUI();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space') {
+                if (currentSlide < slides.length - 1) moveSlide(1);
+            } else if (e.key === 'ArrowLeft') {
+                if (currentSlide > 0) moveSlide(-1);
+            }
+        });
+        
+        updateUI();
+    </script>
+</body>
+</html>
