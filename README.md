@@ -126,3 +126,18 @@ Dưới đây là thống kê độ sụt giảm hiệu năng (Accuracy Drop) tr
 | **Salt & Pepper** | 33.35% | `-37.30%` | Rất nghiêm trọng |
 
 *Lưu ý: Các số liệu này đại diện cho Ground-Truth Risk của mô hình downstream khi chạy trên thực tế, phục vụ làm cột mốc để Calibration các chỉ số như Pixel/Feature Distance hay Predictive Entropy.*
+
+---
+
+## 8. Tài Nguyên (Dataset & Model Repository)
+
+Dành cho các thành viên hoặc người dùng muốn tái tạo lại (reproduce) thử nghiệm trên máy cá nhân:
+
+- **Dataset**: Dự án sử dụng bộ dữ liệu chuẩn **CIFAR-10** (phiên bản hình ảnh 32x32).
+  - Tải tập dữ liệu gốc tại đây: [CIFAR-10 Dataset](https://www.cs.toronto.edu/~kriz/cifar.html)
+  - Giải nén và đặt các class folders của tập Test vào đường dẫn: `cifar10/test/`
+  
+- **Model Checkpoints**: 
+  - Mã nguồn sử dụng kiến trúc **Custom CIFAR ResNet-18** (thiết kế riêng cho ảnh nhỏ 32x32, không dùng MaxPool ở đầu vào).
+  - Trọng số mô hình (Weights) có thể tự động tạo ra bằng cách chạy script huấn luyện có sẵn: `python finetune_and_evaluate.py`
+  - Link Repo chính thức của dự án: [https://github.com/davidhevn/C2-Domain-Shift-Radar](https://github.com/davidhevn/C2-Domain-Shift-Radar)
